@@ -9,25 +9,25 @@ get_content_type = lambda n: mimetypes.guess_type(n)[0] or 'application/octet-st
 
 def encode_multipart_formdata(fields, files):
 
-	BOUNDARY = '----------ThIs_Is_tHe_bouNdaRY_$'
-	CRLF = '\r\n'
+	boundary = '----------ThIs_Is_tHe_bouNdaRY_$'
+	crlf = '\r\n'
 
-	L = []
+	lines = []
 	for (key, filename, value) in files:
-		L.append('--' + BOUNDARY)
-		L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
-		L.append('Content-Type: %s' % get_content_type(filename))
-		L.append('')
-		L.append(value)
+		lines.append('--' + boundary)
+		lines.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
+		lines.append('Content-Type: %s' % get_content_type(filename))
+		lines.append('')
+		lines.append(value)
 	for (key, value) in fields:
-		L.append('--' + BOUNDARY)
-		L.append('Content-Disposition: form-data; name="%s"' % key)
-		L.append('')
-		L.append(value)
-	L.append('--' + BOUNDARY + '--')
-	L.append('')
-	body = CRLF.join([x if type(x)==str else str(x) for x in L])
-	content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
+		lines.append('--' + boundary)
+		lines.append('Content-Disposition: form-data; name="%s"' % key)
+		lines.append('')
+		lines.append(value)
+	lines.append('--' + boundary + '--')
+	lines.append('')
+	body = crlf.join([x if type(x)==str else str(x) for x in lines])
+	content_type = 'multipart/form-data; boundary=%s' % boundary
 	return content_type, body
 
 class AlfApi:
