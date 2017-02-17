@@ -53,11 +53,15 @@ def handle_message(alf, msg, msgpath, msgtext):
 		print(msg.get_content_type())
 		print(msg.get_payload(decode=True))
 
-def decode_subject(value):
-	return email.header.decode_header(value)[0][0]
+def decode_value(value):
+	text = None
+	for item in email.header.decode_header(value):
+		if text == None:
+			text = item[0]
+		else:
+			text += ' ' + item[0]
+	return text
 
-def decode_address(value):
-	return email.header.decode_header(value)[0][0] + ' ' + email.header.decode_header(value)[1][0]
 
 
 text = '';
@@ -87,9 +91,9 @@ if msgpath == None:
 	alf.createFolder('/bsg/documentlibrary/Nachrichten/', msgname)
 	msgpath = '/Nachrichten/' + msgname + '/'
 
-msgtext = 'From: ' + decode_address(msg['from']) + '\n'
-msgtext += 'To: ' + decode_address(msg['to']) + '\n'
-msgtext += 'Subject: ' + decode_subject(msg['subject']) + '\n\n'
+msgtext = 'From: ' + decode_value(msg['from']) + '\n'
+msgtext += 'To: ' + decode_value(msg['to']) + '\n'
+msgtext += 'Subject: ' + decode_value(msg['subject']) + '\n\n'
 
 upload_file(alf, text, 'raw.txt', msgpath)
 handle_message(alf, msg, msgpath, msgtext)
