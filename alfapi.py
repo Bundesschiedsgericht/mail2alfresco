@@ -1,8 +1,10 @@
 # encoding: utf-8
 
+import base64
 import httplib
 import json
 import mimetypes
+import requests
 from xml.dom.minidom import parseString, getDOMImplementation
 
 get_content_type = lambda n: mimetypes.guess_type(n)[0] or 'application/octet-stream'
@@ -17,8 +19,9 @@ def encode_multipart_formdata(fields, files):
 		lines.append('--' + boundary)
 		lines.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
 		lines.append('Content-Type: %s' % get_content_type(filename))
+		lines.append('Content-Transfer-Encoding: base64')
 		lines.append('')
-		lines.append(value)
+		lines.append(base64.b64encode(value))
 	for (key, value) in fields:
 		lines.append('--' + boundary)
 		lines.append('Content-Disposition: form-data; name="%s"' % key)
@@ -80,7 +83,27 @@ class AlfApi:
 		jsonDict = dict(name=name)
 		res = self.request('POST', self.addUrlParams('/alfresco/service/api/site/folder' + path, alf_ticket=self.ticket), json.dumps(jsonDict))
 
+	def listFolders(self, path):
+		lst = []
+		res = self.request('GET', self.addUrlParams('/alfresco/s/slingshot/doclib/doclist/%7Btype%7D/site' + path, alf_ticket=self.ticket))
+		content = json.loads(res.read())
+		for item in content['items']:
+			if item['nodeType'] == 'cm:folder':
+				lst.append(item['fileName'])
+
 	def fileUpload(self, filedata, siteid, containerid, uploaddirectory):
+		url = self.addUrlParams('https://dms.savvy.ch/alfresco/service/api/upload', alf_ticket=self.ticket)
+		files = {"filedata": filedata}
+		data = {"siteid": siteid, "containerid": containerid, "uploaddirectory":uploaddirectory}
+		r = requests.post(url, files=files, data=data)
+		if r.status_code == 200:		
+			print('File %s uploaded in %s/%s%s.' % (filedata.name, siteid, containerid, uploaddirectory))
+			return json.loads(r.text)["nodeRef"].split("/")[-1]
+		else:
+			print('Error: ' + r.status_code)
+			print(json.loads(r.text))
+
+	def xfileUpload(self, filedata, siteid, containerid, uploaddirectory):
 
 		filename = filedata.name
 		contenttype = 'cm:content'
