@@ -103,32 +103,3 @@ class AlfApi:
 			print('Error: ' + r.status_code)
 			print(json.loads(r.text))
 
-	def xfileUpload(self, filedata, siteid, containerid, uploaddirectory):
-
-		filename = filedata.name
-		contenttype = 'cm:content'
-		pars = dict(siteid = siteid,
-		containerid = containerid,
-		uploaddirectory = uploaddirectory,
-		filename = filename,
-		contenttype = contenttype)
-
-		files = (("filedata", filename, filedata.read()),)
-
-		content_type, body = encode_multipart_formdata(pars.items(), files)
-
-		headers = {
-			"User-Agent": "alfREST",
-			"Host": "%s:%s" % (self.host, self.port),
-			"Accept": "*/*",
-			"Content-Length": str(len(body)),
-			"Expect": "100-continue",
-			"Content-Type": content_type,
-		}
-
-		res = self.request('POST', self.addUrlParams('/alfresco/service/api/upload', alf_ticket=self.ticket), body, headers)
-		if res is not None:
-			print('File %s uploaded in %s/%s%s.' % (filename, siteid, containerid, uploaddirectory))
-			return eval(res.read())["nodeRef"].split("/")[-1]
-		return False
-
