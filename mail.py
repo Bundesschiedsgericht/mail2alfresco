@@ -34,13 +34,17 @@ def handle_message(alf, msg, msgpath, msgtext):
 			handle_message(alf, item, msgpath, msgtext)
 	elif msg.get_filename() != None and msg.get_filename().endswith('.asc'):
 		encrypted = msg.get_payload()
-		decrypted = gpg.decrypt(encrypted)
 
-		if decrypted.ok:
-			plain = email.message_from_string(str(decrypted))
-			handle_message(alf, plain, msgpath, msgtext)
+		if encrypted.lstrip().startswith('-----BEGIN PGP MESSAGE-----'):
+			decrypted = gpg.decrypt(encrypted)
+
+			if decrypted.ok:
+				plain = email.message_from_string(str(decrypted))
+				handle_message(alf, plain, msgpath, msgtext)
+			else:
+				print('decryption error: ' + decrypted.status)
 		else:
-			print('decryption error: ' + decrypted.status)
+			upload_file(alf, encrypted, msg.get_filename(), msgpath)
 	elif msg.get_filename() != None and msg.get_filename().endswith('.pgp'):
 		encrypted = msg.get_payload(decode=True)
 		decrypted = gpg.decrypt(encrypted)
