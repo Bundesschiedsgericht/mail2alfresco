@@ -41,17 +41,47 @@ def handle_message(alf, msg, msgpath, msgtext):
 			handle_message(alf, plain, msgpath, msgtext)
 		else:
 			print('decryption error: ' + decrypted.status)
+	elif msg.get_filename() != None and msg.get_filename().endswith('.pgp'):
+		encrypted = msg.get_payload(decode=True)
+		decrypted = gpg.decrypt(encrypted)
+
+		if decrypted.ok:
+			upload_file(alf, decrypted.data, msg.get_filename()[:-4], msgpath)
+		else:
+			print('decryption error: ' + decrypted.status)
 	elif msg.get_filename() != None:
 		upload_file(alf, msg.get_payload(decode=True), msg.get_filename(), msgpath)
 	elif msg.get_content_type() == 'text/plain':
-		msgtext += msg.get_payload(decode=True)
-		upload_file(alf, msgtext, 'message.txt', msgpath)
+		content = msg.get_payload(decode=True)
+		
+		if content.lstrip().startswith('-----BEGIN PGP MESSAGE-----'):
+			decrypted = gpg.decrypt(content)
+
+			if decrypted.ok:
+				plaintext = decrypted.data.decode('utf8')
+				msgtext += plaintext
+				upload_file(alf, msgtext, 'message.txt', msgpath)
+			else:
+				print('decryption error: ' + decrypted.status)
+		else:
+			msgtext += content.decode('utf8') 
+			upload_file(alf, msgtext, 'message.txt', msgpath)
 	elif msg.get_content_type() == 'application/pgp-encrypted':
 		#do nothing
 		dummy = 0
 	else:
-		print(msg.get_content_type())
-		print(msg.get_payload(decode=True))
+		content = msg.get_payload(decode=True)
+		
+		if content.lstrip().startswith('-----BEGIN PGP MESSAGE-----'):
+			decrypted = gpg.decrypt(content)
+
+			if decrypted.ok:
+				plaintext = decrypted.data.decode('utf8')
+				upload_file(alf, plaintext, 'other.txt', msgpath)
+			else:
+				print('decryption error: ' + decrypted.status)
+		else:
+			upload_file(alf, content, 'other.txt', msgpath)
 
 def decode_value(value):
 	text = None
@@ -60,7 +90,7 @@ def decode_value(value):
 			text = item[0]
 		else:
 			text += ' ' + item[0]
-	return text
+	return text.decode('utf-8')
 
 
 
@@ -84,16 +114,16 @@ msgpath = None
 if match != None:
 	for number in match.groups():
 		if number in cases:
-			alf.createFolder('/bsg/documentlibrary/Verfahren/' + case + '/', msgname)
-			msgpath = '/Verfahren/' + case + '/' + msgname + '/'
+			alf.createFolder('/bsg/documentlibrary/Verfahren/' + number + '/', msgname)
+			msgpath = '/Verfahren/' + number + '/' + msgname + '/'
 
 if msgpath == None:
 	alf.createFolder('/bsg/documentlibrary/Nachrichten/', msgname)
 	msgpath = '/Nachrichten/' + msgname + '/'
 
-msgtext = 'From: ' + decode_value(msg['from']) + '\n'
-msgtext += 'To: ' + decode_value(msg['to']) + '\n'
-msgtext += 'Subject: ' + decode_value(msg['subject']) + '\n\n'
+msgtext = u'From: ' + decode_value(msg['from']) + u'\n'
+msgtext += u'To: ' + decode_value(msg['to']) + u'\n'
+msgtext += u'Subject: ' + decode_value(msg['subject']) + u'\n\n'
 
 upload_file(alf, text, 'raw.txt', msgpath)
 handle_message(alf, msg, msgpath, msgtext)

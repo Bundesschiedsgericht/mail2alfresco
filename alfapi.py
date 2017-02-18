@@ -90,6 +90,7 @@ class AlfApi:
 		for item in content['items']:
 			if item['nodeType'] == 'cm:folder':
 				lst.append(item['fileName'])
+		return lst
 
 	def fileUpload(self, filedata, siteid, containerid, uploaddirectory):
 		url = self.addUrlParams('https://dms.savvy.ch/alfresco/service/api/upload', alf_ticket=self.ticket)
