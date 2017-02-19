@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# Alfresco API for files and folders
+
 import base64
 import httplib
 import json

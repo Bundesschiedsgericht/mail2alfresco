@@ -1,0 +1,13 @@
+#!/bin/bash
+
+ALF_HOST="alf.host.com"
+ALF_USER="username"
+ALF_PASS="secret password"
+ALF_SITE="bsg"
+ALF_LIBRARY="documentlibrary"
+ALF_CASES="Verahren"
+ALF_MESSAGES="Nachrichten"
+
+cd /opt/mail2alfresco
+
+python mail.py

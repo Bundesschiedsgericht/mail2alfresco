@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# script takes one mail at a time via pipe (stdin) and uploads the contents to alfresco
+
 from StringIO import StringIO
 from alfapi import AlfApi
 import email
@@ -13,20 +15,22 @@ import datetime
 host = os.environ['ALF_HOST']
 username = os.environ['ALF_USER']
 password = os.environ['ALF_PASS']
+alf_site = os.environ['ALF_SITE']
+alf_library = os.environ['ALF_LIBRARY']
+alf_cases = os.environ['ALF_CASES']
+alf_messages = os.environ['ALF_MESSAGES']
 
 alf = AlfApi(host)
 alf.login(username, password)
-#alf.createFolder('/bsg/documentlibrary/test', 'blubb')
 
 gpg = gnupg.GPG()
-#print(gpg.list_keys())
 
 def upload_file(alf, body, name, msgpath):
 	sio = StringIO()
 	sio.write(body)
 	sio.seek(0)
 	sio.name = name
-	alf.fileUpload(sio, 'bsg', 'documentlibrary', msgpath)
+	alf.fileUpload(sio, alf_site, alf_library, msgpath)
 
 def handle_message(alf, msg, msgpath, msgtext):
 	if msg.is_multipart():
@@ -106,9 +110,11 @@ msg = email.message_from_string(text)
 
 alf = AlfApi(host)
 alf.login(username, password)
-#alf.createFolder('/bsg/documentlibrary/test', 'blubb')
 
-cases = alf.listFolders('/bsg/documentlibrary/Verfahren/')
+casespath = '/' + alf_site + '/' + alf_library + '/' + alf_cases + '/'
+messagespath = '/' + alf_site + '/' + alf_library + '/' + alf_messages + '/'
+
+cases = alf.listFolders(casespath)
 
 regex = re.compile('^.*\[(.+)\].*$')
 match = regex.match(msg['subject'])
@@ -118,15 +124,16 @@ msgpath = None
 if match != None:
 	for number in match.groups():
 		if number in cases:
-			alf.createFolder('/bsg/documentlibrary/Verfahren/' + number + '/', msgname)
-			msgpath = '/Verfahren/' + number + '/' + msgname + '/'
+			alf.createFolder(casespath + number + '/', msgname)
+			msgpath = '/' + alf_cases + '/' + number + '/' + msgname + '/'
 
 if msgpath == None:
-	alf.createFolder('/bsg/documentlibrary/Nachrichten/', msgname)
-	msgpath = '/Nachrichten/' + msgname + '/'
+	alf.createFolder(messagespath, msgname)
+	msgpath = '/' + alf_messages + '/' + msgname + '/'
 
 msgtext = u'From: ' + decode_value(msg['from']) + u'\n'
 msgtext += u'To: ' + decode_value(msg['to']) + u'\n'
+msgtext += u'Date: ' + decode_value(msg['date']) + u'\n'
 msgtext += u'Subject: ' + decode_value(msg['subject']) + u'\n\n'
 
 upload_file(alf, text, 'raw.txt', msgpath)
